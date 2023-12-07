@@ -1,0 +1,9 @@
+.text-dark {
+    color: #000;
+    /* Dark color */
+}
+
+.text-right {
+    text-align: right;
+    /* Align text to the right */
+}
