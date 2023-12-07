@@ -157,7 +157,7 @@ const HomeInstructor = (props) => {
         </div>
         {/* Logout button */}
         <div className="text-right">
-          <Button variant="danger" onClick={logout}>
+          <Button type="submit" variant="danger" onClick={() => logout()}>
             Logout
           </Button>
         </div>

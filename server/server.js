@@ -53,7 +53,6 @@ app.get("/getAdmin", async (req, res) => {
     const result = await AdminModel.find({}).exec();
     res.json(result);
     console.log(result);
-    console.log("MASTI");
   } catch (error) {
     console.error("Error fetching admin data:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -75,6 +74,8 @@ app.post("/createAdmin", async (req, res) => {
 app.get("/getInstructor", async (req, res) => {
   try {
     const result = await InstructorModel.find({}).exec();
+    console.log("fetched instructors:");
+    console.log(result);
     res.json(result);
   } catch (error) {
     console.error("Error fetching instructor data:", error);
@@ -107,6 +108,21 @@ app.get("/api/sections/:instructor_username", async (req, res) => {
   } catch (error) {
     console.error("Error fetching sections:", error);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/api/instructor_salary", async (req, res) => {
+  const { instructors } = req.body;
+
+  try {
+    instructors.forEach(async (element) => {
+      const { _id } = element;
+      await InstructorModel.findOneAndUpdate({ _id }, element, { new: true });
+    });
+    res.status(200).json({ message: "Salary updated successfully!" });
+  } catch (error) {
+    console.error("Error updating salary:", error);
+    res.status(500).json({ error: "Failed to update salary" });
   }
 });
 
@@ -158,9 +174,6 @@ app.post("/api/removeEnrollment", async (req, res) => {
     res.status(500).json({ error: "Failed to remove enrollment" });
   }
 });
-
-
-
 
 app.post("/createInstructor", async (req, res) => {
   try {
