@@ -4,8 +4,6 @@ const cookies = new Cookies();
 
 const StudentProtectedRoutes = ({ component: Component, ...rest }) => {
   const token = cookies.get("StudentTOKEN");
-  console.log("WHATS IN THE TOKEN?");
-  console.log(token);
   return token ? (
     <Component />
   ) : (

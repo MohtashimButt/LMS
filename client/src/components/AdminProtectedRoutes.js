@@ -4,8 +4,6 @@ const cookies = new Cookies();
 
 const AdminProtectedRoutes = ({ component: Component, ...rest }) => {
   const token = cookies.get("AdminTOKEN");
-  console.log("WHATS IN THE TOKEN?");
-  console.log(token);
   return token ? (
     <Component />
   ) : (
