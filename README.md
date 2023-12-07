@@ -2,7 +2,7 @@
 A comprehensive course management site where students and instructors can manage their respective academic tasks
 
 ## SCHEMA
-![shema_image](https://github.com/MohtashimButt/LearningManagementSystem/blob/master/stuff/pyara_schema.png)
+![shema_image](https://github.com/MohtashimButt/LMS/blob/master/stuff/pyara_schema.png)
 
 ## Project running
 To run this project, follow the following steps:
