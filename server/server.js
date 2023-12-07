@@ -146,10 +146,26 @@ app.get("/getStudent", async (req, res) => {
     console.log(result)
     console.log("MASTI")
   } catch (error) {
-    console.error('Error fetching student data:', error);
+    console.error('Error fetching student data blah blah:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+app.get("/api/getStudent/:username", async (req, res) => {
+  const { username } = req.params; // Get the username from the request parameters
+  console.log("Server men aa gya hu")
+  try {
+    const result = await StudentModel.findOne({ username }).exec(); // Find student by username
+    if (!result) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching Student data:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
 app.post("/createStudent", async (req, res) => {
 try {
     const studentData = req.body;
