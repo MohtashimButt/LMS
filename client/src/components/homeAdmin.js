@@ -20,7 +20,7 @@ const HomeAdmin = (prop) => {
   // logout
   const logout = () => {
     // destroy the cookie
-    cookies.remove("TOKEN", { path: "/" });
+    cookies.remove("AdminTOKEN", { path: "/" });
     window.location.href = "/";
   };
   return (

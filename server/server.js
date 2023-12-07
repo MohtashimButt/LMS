@@ -1,34 +1,36 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-import validator from 'validator';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import cors from 'cors';
-import AdminModel from './models/admin.js';
-import InstructorModel from './models/instructor.js';
-import StudentModel from './models/student.js';
-import auth from './middleware/auth.js';
-import SectionsModel from './models/sections.js';
-import EnrollmentsModel from './models/enrollment.js';
+import express from "express";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import validator from "validator";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import cors from "cors";
+import AdminModel from "./models/admin.js";
+import InstructorModel from "./models/instructor.js";
+import StudentModel from "./models/student.js";
+import auth from "./middleware/auth.js";
+import SectionsModel from "./models/sections.js";
+import EnrollmentModel from "./models/enrollment.js";
 
 dotenv.config();
 
 const app = express();
 
-app.use(express.json())
+app.use(express.json());
 
-app.use(cors())
+app.use(cors());
 
-mongoose.connect(process.env.MONG_URI)
-.then(()=>{
-    app.listen(process.env.PORT, ()=>{
-    console.log(`listening on port ${process.env.PORT}`)
-    console.log("Connected to Database")
-})})
-.catch((error)=>{
-    console.log(error)
-})
+mongoose
+  .connect(process.env.MONG_URI)
+  .then(() => {
+    app.listen(process.env.PORT, () => {
+      console.log(`listening on port ${process.env.PORT}`);
+      console.log("Connected to Database");
+    });
+  })
+  .catch((error) => {
+    console.log(error);
+  });
 
 //Make your API calls for every usecase here
 
@@ -47,38 +49,36 @@ app.use((req, res, next) => {
 
 // ADMIN
 app.get("/getAdmin", async (req, res) => {
-    try {
-      const result = await AdminModel.find({}).exec();
-      res.json(result);
-      console.log(result)
-      console.log("MASTI")
-    } catch (error) {
-      console.error('Error fetching admin data:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  });
-app.post("/createAdmin", async (req, res) => {
   try {
-      const adminData = req.body;
-      const newAdmin = new AdminModel(adminData);
-      await newAdmin.save();
-      res.json(newAdmin);  // Return the created admin instead of the request body
+    const result = await AdminModel.find({}).exec();
+    res.json(result);
+    console.log(result);
+    console.log("MASTI");
   } catch (error) {
-      console.error('Error creating admin:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error fetching admin data:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
+app.post("/createAdmin", async (req, res) => {
+  try {
+    const adminData = req.body;
+    const newAdmin = new AdminModel(adminData);
+    await newAdmin.save();
+    res.json(newAdmin); // Return the created admin instead of the request body
+  } catch (error) {
+    console.error("Error creating admin:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 // INSTRUCTOR
 app.get("/getInstructor", async (req, res) => {
   try {
     const result = await InstructorModel.find({}).exec();
     res.json(result);
-    console.log(result)
   } catch (error) {
-    console.error('Error fetching instructor data:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error fetching instructor data:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -100,8 +100,9 @@ app.get("/api/getInstructor/:username", async (req, res) => {
 app.get("/api/sections/:instructor_username", async (req, res) => {
   const { instructor_username } = req.params;
   try {
-    const sections = await SectionsModel.find({ instructor_username }).select("course_name section_no");
-    console.log(sections)
+    const sections = await SectionsModel.find({ instructor_username }).select(
+      "course_name section_no"
+    );
     res.json(sections);
   } catch (error) {
     console.error("Error fetching sections:", error);
@@ -111,31 +112,66 @@ app.get("/api/sections/:instructor_username", async (req, res) => {
 
 // Fetch enrollments based on course_name and section_no
 app.post("/api/enrollment", async (req, res) => {
-  // const { pairs } = req.body; // Pairs array containing course_name and section_no
-  // console.log("pairs:")
-  // console.log(pairs)
+  const { pairs } = req.body; // Pairs array containing course_name and section_no
   try {
-    const result = await EnrollmentsModel.find({}).exec();
-    console.log(result);
-    res.json(result);
+    const enrollments = await EnrollmentModel.find({ $or: pairs });
+
+    res.json(enrollments);
   } catch (error) {
     console.error("Error fetching enrollments:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
+app.post("/api/updateEnrollments", async (req, res) => {
+  const updatedEnrollments = req.body.enrollments;
+  try {
+    for (const updatedEnrollment of updatedEnrollments) {
+      await EnrollmentModel.findOneAndUpdate(
+        { _id: updatedEnrollment._id },
+        updatedEnrollment,
+        { new: true }
+      );
+    }
+    res.status(200).json({ message: "Enrollments updated successfully!" });
+  } catch (error) {
+    console.error("Error updating enrollments:", error);
+    res.status(500).json({ error: "Failed to update enrollments" });
+  }
+});
+
+app.post("/api/removeEnrollment", async (req, res) => {
+  const removedEnrollment = req.body.removedEnrollment;
+
+  try {
+    const result = await EnrollmentModel.deleteOne({
+      _id: removedEnrollment._id,
+    });
+
+    if (result.deletedCount === 1) {
+      res.status(200).json({ message: "Enrollment removed successfully!" });
+    } else {
+      res.status(404).json({ error: "Enrollment not found" });
+    }
+  } catch (error) {
+    console.error("Error removing enrollment:", error);
+    res.status(500).json({ error: "Failed to remove enrollment" });
+  }
+});
+
+
 
 
 app.post("/createInstructor", async (req, res) => {
-try {
+  try {
     const instructorData = req.body;
     const newInstructor = new InstructorModel(instructorData);
     await newInstructor.save();
-    res.json(newInstructor);  // Return the created Instructor instead of the request body
-} catch (error) {
-    console.error('Error creating instructor:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-}
+    res.json(newInstructor); // Return the created Instructor instead of the request body
+  } catch (error) {
+    console.error("Error creating instructor:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 // STUDENT
@@ -143,136 +179,138 @@ app.get("/getStudent", async (req, res) => {
   try {
     const result = await StudentModel.find({}).exec();
     res.json(result);
-    console.log(result)
-    console.log("MASTI")
+    console.log(result);
+    console.log("MASTI");
   } catch (error) {
-    console.error('Error fetching student data:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error fetching student data:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 app.post("/createStudent", async (req, res) => {
-try {
+  try {
     const studentData = req.body;
     const newStudent = new StudentModel(studentData);
     await newStudent.save();
-    res.json(newStudent);  // Return the created Student instead of the request body
-} catch (error) {
-    console.error('Error creating student:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-}
+    res.json(newStudent); // Return the created Student instead of the request body
+  } catch (error) {
+    console.error("Error creating student:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
-
 const createToken = (_id) => {
-  return jwt.sign({_id}, process.env.JWT_SECRET, {expiresIn: '1d'})
-}
+  return jwt.sign({ _id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+};
 
 // SIGN-UP API
 app.post("/api/signup", async (req, res) => {
   try {
     const userData = req.body;
     let newUser;
-    console.log('Received user data:', userData);
+    console.log("Received user data:", userData);
 
     const { username, firstName, lastName, password } = req.body;
 
     // Validate or process individual fields
-    console.log('Username:', username);
-    console.log('First Name:', firstName);
-    console.log('Last Name:', lastName);
-    console.log('Password:', password);
+    console.log("Username:", username);
+    console.log("First Name:", firstName);
+    console.log("Last Name:", lastName);
+    console.log("Password:", password);
 
     // student start from 2 // instructor: 00 // admin: 99
 
-    if (!username || !password){
-      return res.status(400).json({ error: 'All fields are required' });
+    if (!username || !password) {
+      return res.status(400).json({ error: "All fields are required" });
     }
-    if (!validator.isEmail(username)){
-      return res.status(400).json({ error: 'invalid Email format' });
-    }
-
-    if (!validator.isStrongPassword(password)){
-      console.log('password not strong enough')
-      return res.status(400).json({ error: 'Password not strong enough' });
+    if (!validator.isEmail(username)) {
+      return res.status(400).json({ error: "invalid Email format" });
     }
 
-    if (!username.includes('@lums.edu.pk')) {
-      console.log("Invalid email domain")
-      return res.status(400).json({ error: 'Invalid email domain' });
+    if (!validator.isStrongPassword(password)) {
+      console.log("password not strong enough");
+      return res.status(400).json({ error: "Password not strong enough" });
+    }
+
+    if (!username.includes("@lums.edu.pk")) {
+      console.log("Invalid email domain");
+      return res.status(400).json({ error: "Invalid email domain" });
     }
 
     let userModel;
-    if (username.startsWith('2') && (username.length == 20 || /^\d+$/.test(username.slice(0, 8)))) {
+    if (
+      username.startsWith("2") &&
+      (username.length == 20 || /^\d+$/.test(username.slice(0, 8)))
+    ) {
       userModel = StudentModel;
-      console.log("Student")
+      console.log("Student");
       const existingStudent = await StudentModel.findOne({ username });
-      if(existingStudent){
-        console.log('Email already in use');
-        return res.status(400).json({ error: 'Email already in use' });
+      if (existingStudent) {
+        console.log("Email already in use");
+        return res.status(400).json({ error: "Email already in use" });
       }
-    } else if (username.startsWith('00')) {
+    } else if (username.startsWith("00")) {
       userModel = InstructorModel;
-      console.log("Instructor")
+      console.log("Instructor");
       const existingInstructor = await InstructorModel.findOne({ username });
-      if(existingInstructor){
-        console.log('Email already in use');
-        return res.status(400).json({ error: 'Email already in use' });
+      if (existingInstructor) {
+        console.log("Email already in use");
+        return res.status(400).json({ error: "Email already in use" });
       }
-    } else if (username.startsWith('99')) {
+    } else if (username.startsWith("99")) {
       userModel = AdminModel;
-      console.log("Admin")
+      console.log("Admin");
       const existingAdmin = await AdminModel.findOne({ username });
-      if(existingAdmin){
-        console.log('Email already in use');
-        return res.status(400).json({ error: 'Email already in use' });
+      if (existingAdmin) {
+        console.log("Email already in use");
+        return res.status(400).json({ error: "Email already in use" });
       }
     } else {
-      console.log("Its coming here")
-      return res.status(400).json({ error: 'Invalid username format' });
+      console.log("Its coming here");
+      return res.status(400).json({ error: "Invalid username format" });
     }
 
-    const salt = await bcrypt.genSalt(10)
-    const hash = await bcrypt.hash(password, salt)
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(password, salt);
 
     // Create a new user based on the determined userModel
-    if (userModel == StudentModel){
-      const defaultDOB = new Date('0000-01-01');
+    if (userModel == StudentModel) {
+      const defaultDOB = new Date("0000-01-01");
       newUser = new StudentModel({
-      username: username,
-      first_name: firstName,
-      last_name: lastName,
-      password: hash,
-      date_of_birth: defaultDOB,
-      major: "undeclared",
-    });
-    }
-    else if (userModel == InstructorModel){
+        username: username,
+        first_name: firstName,
+        last_name: lastName,
+        password: hash,
+        date_of_birth: defaultDOB,
+        major: "undeclared",
+      });
+    } else if (userModel == InstructorModel) {
       newUser = new InstructorModel({
-      username: username,
-      first_name: firstName,
-      last_name: lastName,
-      password: hash,
-      department: "undecided",
-      ranking: 0,
-      salary: 0,
-    });
-    }
-    else if (userModel == AdminModel){
+        username: username,
+        first_name: firstName,
+        last_name: lastName,
+        password: hash,
+        department: "undecided",
+        ranking: 0,
+        salary: 0,
+      });
+    } else if (userModel == AdminModel) {
       newUser = new AdminModel({
-      username: username,
-      first_name: firstName,
-      last_name: lastName,
-      password: hash,
-    });
+        username: username,
+        first_name: firstName,
+        last_name: lastName,
+        password: hash,
+      });
     }
-    console.log("okay, I think its doing everything. should save.")
+    console.log("okay, I think its doing everything. should save.");
     const user = await newUser.save();
-    const token = createToken(user._id)
+    const token = createToken(user._id);
 
-    res.status(201).json({ message: 'User signed up successfully', user: userData, token });
+    res
+      .status(201)
+      .json({ message: "User signed up successfully", user: userData, token });
   } catch (error) {
-    console.error('Error signing up user:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error signing up user:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -282,45 +320,55 @@ app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({ error: 'Both username and password are required' });
+      return res
+        .status(400)
+        .json({ error: "Both username and password are required" });
     }
 
     let userModel;
-    if (username.startsWith('2') && (username.length == 20 || /^\d+$/.test(username.slice(0, 8)))) {
+    if (
+      username.startsWith("2") &&
+      (username.length == 20 || /^\d+$/.test(username.slice(0, 8)))
+    ) {
       userModel = StudentModel;
-    } else if (username.startsWith('00')) {
+    } else if (username.startsWith("00")) {
       userModel = InstructorModel;
-    } else if (username.startsWith('99')) {
+    } else if (username.startsWith("99")) {
       userModel = AdminModel;
     } else {
-      return res.status(400).json({ error: 'Invalid username format' });
+      return res.status(400).json({ error: "Invalid username format" });
     }
     const user = await userModel.findOne({ username });
 
     if (!user) {
-      return res.status(401).json({ error: 'Incorrect username' });
+      return res.status(401).json({ error: "Incorrect username" });
     }
-    const match = await bcrypt.compare(password, user.password)
-    if (!match){
-      return res.status(401).json({ error: 'Incorrect password' })
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      return res.status(401).json({ error: "Incorrect password" });
     }
-    const token = createToken(user._id)
-
+    const token = createToken(user._id);
 
     // Depending on the user type, you can send a different response
     switch (userModel) {
       case StudentModel:
-        return res.status(200).json({ userType: 'student', message: 'Login successful', token });
+        return res
+          .status(200)
+          .json({ userType: "student", message: "Login successful", token });
       case InstructorModel:
-        return res.status(200).json({ userType: 'instructor', message: 'Login successful', token });
+        return res
+          .status(200)
+          .json({ userType: "instructor", message: "Login successful", token });
       case AdminModel:
-        return res.status(200).json({ userType: 'admin', message: 'Login successful', token });
+        return res
+          .status(200)
+          .json({ userType: "admin", message: "Login successful", token });
       default:
-        return res.status(500).json({ error: 'Internal Server Error' });
+        return res.status(500).json({ error: "Internal Server Error" });
     }
   } catch (error) {
-    console.error('Error logging in user:', error);
-    res.status(500).json({ error: 'Error logging in user' });
+    console.error("Error logging in user:", error);
+    res.status(500).json({ error: "Error logging in user" });
   }
 });
 
