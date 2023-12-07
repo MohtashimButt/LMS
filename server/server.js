@@ -11,6 +11,7 @@ import StudentModel from './models/student.js';
 import auth from './middleware/auth.js';
 import SectionsModel from './models/sections.js';
 import EnrollmentsModel from './models/enrollment.js';
+import CourseModel from './models/course.js';
 
 dotenv.config();
 
@@ -124,8 +125,6 @@ app.post("/api/enrollment", async (req, res) => {
   }
 });
 
-
-
 app.post("/createInstructor", async (req, res) => {
 try {
     const instructorData = req.body;
@@ -164,7 +163,68 @@ app.get("/api/getStudent/:username", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+app.post('/api/updateInstructorRanking', async (req, res) => {
+  try {
+    console.log("UPDATE WALE SERVER MEN AGYA HU");
+    const { instructorUsername, newRanking } = req.body;
 
+    // Find the instructor by username
+    const instructor = await InstructorModel.findOne({ username: instructorUsername });
+
+    if (!instructor) {
+      return res.status(404).json({ error: 'Instructor not found' });
+    }
+    instructor.ranking = newRanking;  //assign
+    await instructor.save();          //save
+    // Respond with the updated instructor
+    res.json({ success: true, instructor });
+  } catch (error) {
+    console.error('Error updating instructor ranking:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+          //Enrollment
+app.post('/api/enrollStudent', async (req, res) => {
+  console.log("AAAAAAAAAAAAaaa")
+  try {
+    
+    const { studentUsername, courseName, sectionNumber, grade } = req.body;
+
+    // Create a new enrollment entry
+    const enrollment = new EnrollmentsModel({
+      student_username: studentUsername,
+      course_name: courseName,
+      section_no: sectionNumber,
+      grade: grade,
+    });
+    console.log("enrollStudent api k andar server")
+
+    // Save the enrollment to the database
+    await enrollment.save();
+
+    // Respond with success message or any other data
+    res.json({ success: true, message: 'Enrollment HOGAI' });
+  } catch (error) {
+    console.error('SERVER MEN HU OR ENROLLMENT NI HUI:', error);
+    res.status(500).json({ error: 'Internal Server Error hue hue' });
+  }
+});
+
+// SEARCH
+app.get('/api/searchCourses', async (req, res) => {
+  try {
+    const searchTerm = req.query.searchTerm;
+
+    // Perform a case-insensitive search for courses containing the search term
+    const courses = await CourseModel.find({ course_name: { $regex: searchTerm, $options: 'i' } });
+
+    res.json({ success: true, courses });
+    console.log("BHAIAIAIAIAI")
+  } catch (error) {
+    console.error('Error searching courses:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 app.post("/createStudent", async (req, res) => {
 try {
